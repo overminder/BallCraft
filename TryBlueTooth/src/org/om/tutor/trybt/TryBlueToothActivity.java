@@ -186,7 +186,7 @@ public class TryBlueToothActivity extends Activity {
     		
     		byte[] buf = new byte[1024];
     		sockPair.getInputStream().read(buf);
-    		toast("[Server] received msg from client: `" + buf.toString() + "'");
+    		toast("[Server] received msg from client: `" + new String(buf) + "'");
 			sockPair.close();
 		} catch (IOException e) {
 			toast("[Server] error operating on " + sockPair.toString());
@@ -216,6 +216,7 @@ public class TryBlueToothActivity extends Activity {
     	        try {
     	            // Connect the device through the socket. This will block
     	            // until it succeeds or throws an exception
+    	        	// XXX: pair with device?
     	            sock.connect();
     	        } catch (IOException connectException) {
     	            // Unable to connect; close the socket and get out
@@ -241,7 +242,7 @@ public class TryBlueToothActivity extends Activity {
     	try {
     		sock.getInputStream().read(buf);
 			sock.getOutputStream().write("[Client] Hai.".getBytes());
-			toast("[Client] server said: `" + buf.toString() + "'");
+			toast("[Client] server said: `" + new String(buf) + "'");
 			sock.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
