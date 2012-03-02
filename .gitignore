@@ -1,6 +1,6 @@
 *.class
-BallCraft/bin/*
-*/bin/*
+*/bin
+*/gen
 *.apk
 *.ap_
 *.dex
