@@ -14,7 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.widget.TextView;
+import android.util.Log;
 
 
 public class TryBlueToothActivity extends Activity {
@@ -66,12 +66,7 @@ public class TryBlueToothActivity extends Activity {
     
     void toast(String s) {
         // Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
-    	TextView tv = (TextView) findViewById(R.id.my_tv);
-    	CharSequence origText = tv.getText();
-    	if (origText.length() > 500) {
-    		origText = "";
-    	}
-    	tv.setText(origText + "\n" + s);
+    	Log.e("[]", s);
     }
     
     void openBluetoothAdapter() {
