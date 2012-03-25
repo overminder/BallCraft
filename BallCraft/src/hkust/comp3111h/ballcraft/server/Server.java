@@ -4,6 +4,7 @@ import hkust.comp3111h.ballcraft.client.GameInput;
 import hkust.comp3111h.ballcraft.client.GameUpdater;
 import android.app.IntentService;
 import android.content.Intent;
+import android.util.Log;
 
 public class Server extends IntentService
 {
@@ -19,23 +20,16 @@ public class Server extends IntentService
 	
 	static public boolean inited = false;
 	
+	static public String msg;
+	
 	public Server()
 	{
-		super("ServerService");
-		gameState = ServerGameState.getStateInstance();
-		gameState.loadMap(this, "vector.xml");
-		
-		gameUpdater = new GameUpdater();
-		
-		gameInput = new GameInput();
-		
-		inited = true;
-		lastRun = System.currentTimeMillis();
+		super("Server");
 	}
 	
 	public static void setState(String string)
 	{
-		gameInput = GameInput.deserializeGameInput(string); // get and parse data from server adapter
+		gameInput = GameInput.fromSerializedString(string); // get and parse data from server adapter
 	}
 	
 	public static GameUpdater generateGameUpdater() {
@@ -52,8 +46,8 @@ public class Server extends IntentService
 			lastRun = System.currentTimeMillis();
 			
 			ServerGameState.getStateInstance().processPlayerInput(0, gameInput); // process
-			ServerAdapter.processServerMsg(generateGameUpdater().toSerializedString()); // send back to server adapter
-			
+			ServerAdapter.processServerMsg(msg + ";" + generateGameUpdater().toSerializedString()); // send back to server adapter
+			msg = "";
 			try {
 				/*
 				long sleep = 30 + time - System.currentTimeMillis();
@@ -72,8 +66,17 @@ public class Server extends IntentService
 	}
 
 	@Override
-	protected void onHandleIntent(Intent arg0) 
-	{
+	protected void onHandleIntent(Intent intent) {
+		gameState = ServerGameState.getStateInstance();
+		gameState.loadMap(intent.getStringExtra("map"));
+		
+		gameUpdater = new GameUpdater();
+		
+		gameInput = new GameInput();
+		
+		inited = true;
+		lastRun = System.currentTimeMillis();
+		msg = "";
 		run();
 	}
 	

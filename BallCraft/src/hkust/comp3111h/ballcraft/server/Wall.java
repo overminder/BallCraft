@@ -11,14 +11,10 @@ import javax.microedition.khronos.opengles.GL10;
 
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.common.Vec2;
-import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
 
 public class Wall extends Unit {
-
-	public Vec2 start;
-	public Vec2 end;
 	
 	private float [] vertices;
 	
@@ -28,26 +24,34 @@ public class Wall extends Unit {
 		this(start, end, true);
 	}
 	
-	public Wall(Vec2 start, Vec2 end, boolean isServer) {
+	public Wall(Vec2 start, Vec2 end, boolean isServer)
+	{
 		if (isServer)
 		{
+			start = start.mul(1.0f / rate);
+			end = end.mul(1.0f / rate);
+			
 			BodyDef bodyDef = new BodyDef();
 			bodyDef.type = BodyType.STATIC;
 			body = ServerGameState.world.createBody(bodyDef);
 			PolygonShape shape = new PolygonShape();
 			
 			Vec2 vector = start.sub(end);
-			float length = vector.normalize();
+			float length = vector.normalize() / 2;
 			Vec2 midPoint = start.add(end).mul(0.5f);
 			float angle = (float)Math.acos(Vec2.dot(vector, new Vec2(1, 0)));
 			shape.setAsBox(length, 0, midPoint, angle);
 			
 			body.createFixture(shape, 0); // bind the dense, friction-laden fixture to the body
+
+			vertices = new float [4];
+			vertices[0] = start.x;
+			vertices[1] = start.y;
+			vertices[2] = end.x;
+			vertices[3] = end.y;
 		}
 		else
 		{
-			this.start = start;
-			this.end = end;
 			vertices = new float [12];
 			vertices[0] = start.x;
 			vertices[1] = start.y;
@@ -80,6 +84,7 @@ public class Wall extends Unit {
 	}
 	
 	public void draw(GL10 gl) {
+		gl.glColor4f(0, 0.5f, 0.5f, 1);
 		gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
 		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer);
 		gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, vertices.length / 3);
@@ -96,9 +101,13 @@ public class Wall extends Unit {
 	}
 	
 	@Override
-	public String toSerializedString() {
+	public String toSerializedString() 
+	{
 		String serialized = "";
-		return null;
+		serialized += "wall:";
+		serialized += vertices[0] * rate + "," + vertices[1] * rate + ",";
+		serialized += vertices[2] * rate + "," + vertices[3] * rate;
+		return serialized;
 	}
 
 	@Override

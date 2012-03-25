@@ -17,8 +17,8 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
-import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 public class MainMenu extends Activity implements SensorEventListener {
 	
@@ -65,6 +65,7 @@ public class MainMenu extends Activity implements SensorEventListener {
 				self.startActivity(new Intent(MainMenu.this, OptionMenu.class));
 				self.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
 			}
+			
 		});
 			
 		final Animation rotate360 = AnimationUtils.loadAnimation(this, R.anim.rotate360);
@@ -85,25 +86,31 @@ public class MainMenu extends Activity implements SensorEventListener {
 			@Override
 			public void onAnimationStart(Animation animation) {
 			}
+			
 		});
 		
-		Button singlePlayerButton = (Button) this.findViewById(R.id.main_menu_single_player_button);
-		singlePlayerButton.getBackground().setAlpha(180);
+		final ImageView singlePlayerButton = (ImageView) this.findViewById(R.id.main_menu_single_player_button);
+		// singlePlayerButton.getBackground().setAlpha(180);
 		singlePlayerButton.setOnClickListener(new OnClickListener() {
 			
-			@Override
+			
 			public void onClick(View v) {
 				self.startActivity(new Intent(MainMenu.this, GameActivity.class));
 				self.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
 			}
 			
 		});
+		
+		/*
+		Animation opacityChange = AnimationUtils.loadAnimation(self, R.anim.opacity_change);
+		singlePlayerButton.startAnimation(opacityChange);
+		*/
 			
-		Button multiPlayerButton = (Button) this.findViewById(R.id.main_menu_multi_player_button);
-		multiPlayerButton.getBackground().setAlpha(180);
+		ImageView multiPlayerButton = (ImageView) this.findViewById(R.id.main_menu_multi_player_button);
+		// multiPlayerButton.getBackground().setAlpha(180);
 		multiPlayerButton.setOnClickListener(new OnClickListener() {
 			
-			@Override
+			
 			public void onClick(View v) {
 				self.startActivity(new Intent(MainMenu.this, BallSelectMenu.class));
 				self.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
@@ -111,12 +118,12 @@ public class MainMenu extends Activity implements SensorEventListener {
 			
 		});
 	}
-
+	
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
 	}
 
-	@Override
+	
 	public void onSensorChanged(SensorEvent event) {
 		turnX = event.values[SensorManager.DATA_Y] / 3f;
 		turnY = event.values[SensorManager.DATA_X] / 3f;

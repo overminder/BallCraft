@@ -11,6 +11,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.jbox2d.common.Vec2;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -19,16 +20,17 @@ import org.xml.sax.SAXException;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.util.Log;
 
 public class MapParser{
-	private Context context;
+	private static Context context;
 	
-	public MapParser(Context context) {
-		this.context = context;
+	public static void setContext(Context con) {
+		context = con;
 	}
 	
-	public Map getMapFromXML(String fileName) {
+	public static Map getMapFromXML(String fileName) {
 		Map map = new Map();
 		DocumentBuilderFactory factory=null;
 	    DocumentBuilder builder=null;
@@ -39,48 +41,57 @@ public class MapParser{
 	    factory = DocumentBuilderFactory.newInstance();
 	    try {
 	    	Log.d("map", "find document");
+	    	
 	    	//load file
 	    	builder = factory.newDocumentBuilder();
 	    	inputStream = context.getResources().getAssets().open(fileName);
 	    	document = builder.parse(inputStream);
 	    	Log.d("map", "load document");
+	    	
 	    	//get root
 	    	Element root = document.getDocumentElement();
+	    	
 	    	//get map name
 	    	Element mapName = (Element)root.getElementsByTagName("name").item(0);
 	    	String msg = mapName.getFirstChild().getNodeValue();
 	    	Log.d("map", msg);
 	    	map.setName(mapName.getFirstChild().getNodeValue());
+	    	
 	        //get height count
 	    	Element height = (Element)root.getElementsByTagName("height").item(0);
 	    	map.setHeight(Integer.parseInt(height.getFirstChild().getNodeValue()));
 	    	//get width count
+	    	
 	    	Element width = (Element)root.getElementsByTagName("width").item(0);
 	    	map.setWidth(Integer.parseInt(width.getFirstChild().getNodeValue()));
+	    	
 	    	//get init position
 	    	Element init = (Element)root.getElementsByTagName("initPosition").item(0);
 	    	map.setInitPosition(parseString(init.getFirstChild().getNodeValue()));
+	    	
 	    	//get wall list
-	    //	Element wallList = (Element)root.getElementsByTagName("wallList").item(0);
+		    // Element wallList = (Element)root.getElementsByTagName("wallList").item(0);
 	    	NodeList nodes=root.getElementsByTagName("wall");
+	    	
             //find all wall object under wall list
-             for(int i=0;i<nodes.getLength();i++){
-                     Element wallElement=(Element)(nodes.item(i));
-                     String wallData = wallElement.getFirstChild().getNodeValue();
-                     Log.i("map", wallData);
-                     map.addWall(parseString(wallData));                     
-             }
-        }catch (IOException e){
-            e.printStackTrace();
+			for(int i=0;i<nodes.getLength();i++){
+				Element wallElement=(Element)(nodes.item(i));
+				String wallData = wallElement.getFirstChild().getNodeValue();
+				Log.i("map", wallData);
+				map.addWall(parseString(wallData));                     
+			}
+			
+        } catch (IOException e) {
+            Log.e("map", e.getMessage());
         } catch (SAXException e) {
-            e.printStackTrace();
-        }catch (ParserConfigurationException e) {
-            e.printStackTrace();
+        	Log.e("map", e.getMessage());
+        } catch (ParserConfigurationException e) {
+        	Log.e("map", e.getMessage());
 	    }
 	    return map;
 	}
-
-	private int[] parseString(String wallData){
+	
+	private static int[] parseString(String wallData){
 		String[] parts = wallData.split(",");
 		int length = parts.length;
         int[] data = new int[length];
@@ -92,7 +103,7 @@ public class MapParser{
         return data;
 	}
 	
-	public int[][] readLayer(String fileName,int width, int height){
+	public static int[][] readLayer(String fileName,int width, int height){
 		int [][] layer = new int[height][width];
 	    int    i_data = 0; 
 	    try {
@@ -119,7 +130,7 @@ public class MapParser{
 		return layer;
 	}
 	
-	public Bitmap readBitmap(String imageUrl){  
+	public static Bitmap readBitmap(String imageUrl){  
         BitmapFactory.Options opt = new BitmapFactory.Options();  
         opt.inPreferredConfig = Bitmap.Config.RGB_565;   
         opt.inPurgeable = true;  

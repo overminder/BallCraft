@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<map>
+	<name>Map 01</name>
+	<height>400</height>
+	<width>400</width>
+	<initPosition>100,100</initPosition>
+	<wall>-200,-200,200,-200</wall>
+	<wall>-200,-200,-200,200</wall>
+	<wall>200,-200,200,200</wall>
+	<wall>-200,200,200,200</wall>
+	<wall>-200,200,200,-200</wall>
+</map>
