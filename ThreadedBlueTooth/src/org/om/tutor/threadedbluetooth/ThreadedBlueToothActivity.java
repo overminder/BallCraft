@@ -5,81 +5,78 @@ import java.util.UUID;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 public class ThreadedBlueToothActivity extends BluetoothAwareActivity {
-	class ServerChannel extends BluetoothChannel {
-		
-		public ServerChannel() { }
-		
-		@Override
-		TYPE getType() {
-			return TYPE.SERVER;
-		}
-
+	final String kServerName = "sanya-htc";
+	
+	class ChannelToClient extends BluetoothChannel {
 		@Override
 		void onOpen() {
-			Log.e("server", "channel opened");
+			log("@server, channel opened");
 		}
 
 		@Override
 		void onMessage(byte[] message) {
-			Log.e("server", "message received");
+			log("@server, message received: `" + new String(message) + "'");
 		}
 
 		@Override
 		void onError(Exception e) {
-			Log.e("server", "error happened");
+			log("@server, error happened");
 		}
 
 		@Override
 		void onClose() {
-			Log.e("server", "connection closed");
+			log("@server, connection closed");
 		}
 	}
 	
-	class ClientChannel extends BluetoothChannel {
-		
-		public ClientChannel() { }
-		
-		@Override
-		TYPE getType() {
-			return TYPE.CLIENT;
-		}
-
+	class ChannelToServer extends BluetoothChannel {
 		@Override
 		void onOpen() {
-			Log.e("client", "channel opened");
+			log("@client, channel opened.");
+			sendMessage("From client.".getBytes());
 		}
 
 		@Override
 		void onMessage(byte[] message) {
-			Log.e("client", "message received");
+			log("@client, msg received: `" + new String(message) + "'");
 		}
 
 		@Override
 		void onError(Exception e) {
-			Log.e("client", "caught error");
+			log("@client, err caught: " + e);
 		}
 
 		@Override
 		void onClose() {
-			Log.e("client", "conn closed");
+			log("@client, conn closed");
 		}
 	}
 	
-	BluetoothChannelFactory channelFactory = new BluetoothChannelFactory(
-		ServerChannel.class, ClientChannel.class
-	);
+	BluetoothChannelFactory channelFactory = new BluetoothChannelFactory() {
+		@Override
+		public BluetoothChannel newServerChannel() {
+			return new ChannelToServer();
+		}
+
+		@Override
+		public BluetoothChannel newClientChannel() {
+			return new ChannelToClient();
+		}
+	};
 	
 	BluetoothService bluetoothService = new BluetoothService() {
 		BluetoothDevice serverDevice;
 		
 		@Override
 		UUID getUUID() {
-			// XXX: what is this?
-	    	return new UUID(10L, 20L);
+			// Just to keep it the same across the server and the client.
+			return UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 		}
 	
 		@Override
@@ -88,47 +85,50 @@ public class ThreadedBlueToothActivity extends BluetoothAwareActivity {
 			if (name == null) {
 				name = "<nil>";
 			}
-			else if (name.equals("sanya-htc")) {
+			else if (name.equals(kServerName)) {
 				serverDevice = device;
 				BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-				final BluetoothChannel serverChannel;
-				try {
-					// I am a client
-					serverChannel = connectToDevice(serverDevice);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-				new Thread() {
-					public void run() {
-						try {
-							serverChannel.sendMessage("From client.".getBytes());
-						} catch (IOException e) {
-							throw new RuntimeException();
-						}
-					}
-				}.start();
 			}
-			Log.e("btServ", "found " + name);
+			log("found " + name);
 		}
 
 		@Override
 		void onDiscoveryFinished() {
-			Log.e("btServ", "discovery finished");
-			// I am the server
-			startListening();
-		}
-
-		@Override
-		void onListeningFailed() {
-			Log.e("btServ", "listen failed");
+			if (serverDevice == null) {
+				log("discovery finished, I am the server.");
+				new Thread() {
+					public void run() {
+						int mSecSleep = 500;
+						while (true) {
+							try {
+								startListening();
+								break;
+							} catch (IOException e) {
+								log("listen failed: " + e + ", retry after " + mSecSleep + "mSec.");
+								try {
+									Thread.sleep(mSecSleep);
+									mSecSleep <<= 1;
+								} catch (InterruptedException e1) { }
+								log("listening: retry now.");
+							}
+						}
+					}
+				}.start();
+			}
+			else {
+				log("discovery finished, I am the client, connecting to the server: " + serverDevice.getName());
+				try {
+					connectToDevice(serverDevice);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
 		}
 
 		@Override
 		void onClientConnected(BluetoothChannel client) {
-			Log.e("btServ", "someone connected");
-			try {
-				client.sendMessage("hello, world!".getBytes());
-			} catch (IOException e) { }
+			log("server: someone connected");
+			client.sendMessage("hello, world! -- from server".getBytes());
 		}
 
 		@Override
@@ -140,36 +140,82 @@ public class ThreadedBlueToothActivity extends BluetoothAwareActivity {
 		BluetoothChannelFactory getChannelFactory() {
 			return channelFactory;
 		}
+
+		@Override
+		void onListeningStarted() {
+			log("listening started.");
+		}
+
+		@Override
+		void onDiscoveryStarted() {
+			log("discovery started.");
+		}
+
+		@Override
+		boolean shallAccept(BluetoothSocket socket) {
+			return true;
+		}
+
+		@Override
+		String getServiceName() {
+			return "Ballcraft";
+		}
 	};
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        
         initializeBluetooth(0, 1);
+    }
+    
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+    	bluetoothService.destroy();
+    }
+    
+    @Override
+    public void onBackPressed() {
+    	onDestroy();
+    	crashMe();
+    }
+    
+    @SuppressWarnings({ "null", "unused" })
+	void crashMe() {
+    	Integer i = null;
+    	int i2 = i;
     }
 
 	@Override
 	void onEnableRequestResult(boolean enabled) {
 		if (enabled) {
-			Log.e("btServ", "enabled: true");
-			setDiscoverableFor(3600);
+			log("enabled: true");
+			setDiscoverableFor(600);
 		}
 		else {
-			Log.e("btServ", "enabled: false");
+			log("enabled: false");
 		}
 	}
 
 	@Override
 	void onDiscoverabilityRequestResult(boolean discoverable) {
 		if (discoverable) {
-			Log.e("btServ", "discoverable: true");
+			log("discoverable: true");
 			bluetoothService.startDiscovery(this);
 		}
 		else {
-			Log.e("btServ", "discoverable: false");
+			log("discoverable: false");
 		}
 	}
 
-
+	void log(final String msg) {
+		runOnUiThread(new Runnable() {
+			public void run() {
+				Toast.makeText(ThreadedBlueToothActivity.this, msg, Toast.LENGTH_SHORT).show();
+			}
+		});
+		Log.e("btServ", msg);
+	}
 }
